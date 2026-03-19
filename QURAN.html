@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0e1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Al-Quran">
+<meta name="description" content="Lecture du Quran avec suivi intelligent">
+<title>القرآن الكريم — Al-Quran Noble</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Amiri:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@400;500;600&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #05080f;
+    --bg-card: #0c1220;
+    --bg-surface: #111827;
+    --bg-elevated: #162035;
+    --gold: #c9a84c;
+    --gold-light: #e8c97a;
+    --gold-dim: #7a6330;
+    --teal: #2dd4bf;
+    --teal-dim: #0d5c55;
+    --text-primary: #f0e8d8;
+    --text-secondary: #a09880;
+    --text-muted: #4a5568;
+    --arabic-color: #e8d5a0;
+    --phonetic-color: #7ecac0;
+    --french-color: #c8c0b0;
+    --border: rgba(201,168,76,0.15);
+    --border-active: rgba(201,168,76,0.5);
+    --shadow: 0 20px 60px rgba(0,0,0,0.6);
+    --radius: 16px;
+    --sidebar-w: 300px;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Lato', sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* BACKGROUND EFFECT */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 10% 20%, rgba(201,168,76,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 60% at 90% 80%, rgba(45,212,191,0.03) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 50% 50%, rgba(201,168,76,0.02) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* LAYOUT */
+  .app-layout {
+    display: flex;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: linear-gradient(180deg, #0a0e1a 0%, #080c16 100%);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 100;
+    transform: translateX(0);
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    overflow: hidden;
+  }
+
+  .sidebar.hidden { transform: translateX(-100%); }
+
+  .sidebar-logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-family: 'Amiri', serif;
+    color: var(--bg-deep);
+    flex-shrink: 0;
+  }
+
+  .logo-text { line-height: 1.2; }
+  .logo-arabic { font-family: 'Amiri', serif; font-size: 16px; color: var(--gold); direction: rtl; }
+  .logo-fr { font-family: 'Cinzel', serif; font-size: 10px; color: var(--text-secondary); letter-spacing: 2px; text-transform: uppercase; }
+
+  /* PROGRESS PANEL */
+  .progress-panel {
+    margin: 16px 16px 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+
+  .progress-title {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  .progress-stats {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;
+  }
+
+  .stat-box {
+    background: var(--bg-surface);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: 'Cinzel', serif;
+    font-size: 20px;
+    color: var(--gold);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  .overall-bar-wrap { margin-top: 4px; }
+  .bar-label { font-size: 10px; color: var(--text-secondary); margin-bottom: 4px; display: flex; justify-content: space-between; }
+  .bar-track { height: 6px; background: var(--bg-surface); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold-dim), var(--gold)); border-radius: 3px; transition: width 0.5s ease; }
+
+  /* STREAK */
+  .streak-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 16px;
+    margin: 8px 16px 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .streak-fire { font-size: 20px; }
+  .streak-info { flex: 1; }
+  .streak-num { font-family: 'Cinzel', serif; font-size: 18px; color: #f97316; }
+  .streak-text { font-size: 10px; color: var(--text-secondary); }
+
+  /* SEARCH */
+  .search-wrap {
+    padding: 12px 16px 0;
+  }
+
+  .search-box {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text-primary);
+    font-family: 'Lato', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-box:focus { border-color: var(--border-active); }
+  .search-box::placeholder { color: var(--text-muted); }
+
+  /* SURAH LIST */
+  .surah-list-header {
+    padding: 16px 16px 8px;
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .surah-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 8px 16px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--gold-dim) transparent;
+  }
+
+  .surah-list::-webkit-scrollbar { width: 4px; }
+  .surah-list::-webkit-scrollbar-track { background: transparent; }
+  .surah-list::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
+
+  .surah-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    border: 1px solid transparent;
+    margin-bottom: 2px;
+    position: relative;
+  }
+
+  .surah-item:hover { background: var(--bg-card); }
+  .surah-item.active { background: var(--bg-elevated); border-color: var(--border-active); }
+
+  .surah-num {
+    width: 28px; height: 28px;
+    background: var(--bg-surface);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+  }
+
+  .surah-item.active .surah-num { background: var(--gold); color: var(--bg-deep); }
+
+  .surah-names { flex: 1; min-width: 0; }
+  .surah-name-ar { font-family: 'Amiri', serif; font-size: 14px; color: var(--text-primary); direction: rtl; text-align: right; }
+  .surah-name-fr { font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .surah-meta { text-align: right; flex-shrink: 0; }
+  .surah-verses { font-size: 10px; color: var(--text-muted); }
+  .surah-type { font-size: 9px; color: var(--teal); letter-spacing: 1px; }
+
+  .surah-progress-dot {
+    position: absolute; right: 8px; top: 8px;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--gold);
+    display: none;
+  }
+
+  .surah-item.has-progress .surah-progress-dot { display: block; }
+
+  /* MAIN CONTENT */
+  .main {
+    flex: 1;
+    margin-left: var(--sidebar-w);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* TOPBAR */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(5,8,15,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .menu-btn {
+    width: 36px; height: 36px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .topbar-title { flex: 1; min-width: 0; }
+  .topbar-surah-ar { font-family: 'Amiri', serif; font-size: 20px; color: var(--gold); direction: rtl; }
+  .topbar-surah-fr { font-size: 12px; color: var(--text-secondary); }
+
+  .topbar-actions { display: flex; gap: 8px; }
+
+  .action-btn {
+    height: 36px; padding: 0 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-family: 'Lato', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+    white-space: nowrap;
+  }
+
+  .action-btn:hover { border-color: var(--border-active); color: var(--gold); }
+  .action-btn.active { background: rgba(201,168,76,0.1); border-color: var(--border-active); color: var(--gold); }
+
+  /* SURAH HEADER */
+  .surah-header {
+    text-align: center;
+    padding: 48px 24px 32px;
+    position: relative;
+  }
+
+  .surah-header-ornament {
+    font-size: 32px;
+    color: var(--gold);
+    opacity: 0.3;
+    margin-bottom: 16px;
+    font-family: 'Amiri', serif;
+  }
+
+  .surah-header-number {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .surah-header-arabic {
+    font-family: 'Amiri Quran', 'Amiri', serif;
+    font-size: 48px;
+    color: var(--gold);
+    direction: rtl;
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+
+  .surah-header-transliteration {
+    font-family: 'Cinzel', serif;
+    font-size: 18px;
+    color: var(--text-secondary);
+    letter-spacing: 3px;
+    margin-bottom: 4px;
+  }
+
+  .surah-header-french {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .surah-header-info {
+    display: flex; gap: 16px; justify-content: center; margin-top: 16px; flex-wrap: wrap;
+  }
+
+  .surah-badge {
+    padding: 4px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-family: 'Cinzel', serif;
+    letter-spacing: 1px;
+  }
+
+  .surah-badge.revealed { border-color: var(--teal-dim); color: var(--teal); }
+
+  /* BISMILLAH */
+  .bismillah {
+    text-align: center;
+    padding: 24px;
+    margin: 0 24px 8px;
+    background: linear-gradient(135deg, var(--bg-card), var(--bg-elevated));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: 'Amiri Quran', 'Amiri', serif;
+    font-size: 36px;
+    color: var(--gold-light);
+    direction: rtl;
+    line-height: 1.6;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .bismillah::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.08), transparent 70%);
+  }
+
+  /* VERSES CONTAINER */
+  .verses-container {
+    padding: 8px 24px 100px;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .verse-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: all 0.25s ease;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .verse-card:hover { border-color: rgba(201,168,76,0.3); transform: translateY(-1px); }
+
+  .verse-card.active {
+    border-color: var(--border-active);
+    background: var(--bg-elevated);
+    box-shadow: 0 0 30px rgba(201,168,76,0.08);
+  }
+
+  .verse-card.read {
+    border-color: rgba(45,212,191,0.2);
+  }
+
+  .verse-card.read .verse-num-badge { background: rgba(45,212,191,0.15); color: var(--teal); }
+
+  .verse-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .verse-num-badge {
+    width: 32px; height: 32px;
+    background: var(--bg-surface);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .verse-actions {
+    display: flex; gap: 6px;
+  }
+
+  .verse-action-btn {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .verse-action-btn:hover { background: var(--bg-surface); color: var(--text-primary); }
+  .verse-action-btn.bookmarked { color: var(--gold); border-color: var(--gold-dim); }
+
+  /* VERSE CONTENT */
+  .verse-arabic {
+    padding: 20px 20px 12px;
+    font-family: 'Amiri Quran', 'Amiri', serif;
+    font-size: 28px;
+    line-height: 2.2;
+    color: var(--arabic-color);
+    direction: rtl;
+    text-align: right;
+  }
+
+  .verse-phonetic {
+    padding: 0 20px 10px;
+    font-family: 'Lato', sans-serif;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--phonetic-color);
+    font-style: italic;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .verse-phonetic-label {
+    font-size: 9px;
+    color: var(--teal-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+    font-style: normal;
+  }
+
+  .verse-french {
+    padding: 12px 20px 16px;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--french-color);
+  }
+
+  .verse-french-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    font-family: 'Cinzel', serif;
+  }
+
+  /* READ INDICATOR */
+  .read-indicator {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--teal);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .verse-card.read .read-indicator { opacity: 1; }
+  .verse-card.active .read-indicator { background: var(--gold); opacity: 1; }
+
+  /* FLOATING PROGRESS BAR */
+  .floating-progress {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateX(calc(var(--sidebar-w)/2));
+    background: rgba(12,18,32,0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: var(--shadow);
+    z-index: 200;
+    min-width: 260px;
+  }
+
+  .fp-progress {
+    flex: 1;
+  }
+
+  .fp-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .fp-track {
+    height: 4px;
+    background: var(--bg-surface);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .fp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--teal-dim), var(--teal));
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  .fp-btn {
+    width: 36px; height: 36px;
+    background: var(--gold);
+    border: none;
+    border-radius: 50%;
+    color: var(--bg-deep);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+
+  .fp-btn:hover { background: var(--gold-light); transform: scale(1.1); }
+
+  /* SETTINGS PANEL */
+  .settings-panel {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 280px;
+    background: var(--bg-card);
+    border-left: 1px solid var(--border);
+    z-index: 300;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    overflow-y: auto;
+    padding: 24px 20px;
+  }
+
+  .settings-panel.open { transform: translateX(0); }
+
+  .settings-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;
+  }
+
+  .settings-title {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+
+  .close-btn {
+    width: 32px; height: 32px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .setting-section { margin-bottom: 24px; }
+
+  .setting-section-title {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .setting-label { font-size: 13px; color: var(--text-secondary); }
+
+  .toggle {
+    width: 40px; height: 22px;
+    background: var(--bg-surface);
+    border-radius: 11px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+  }
+
+  .toggle.on { background: var(--teal-dim); border-color: var(--teal); }
+
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    top: 2px; left: 2px;
+    transition: transform 0.2s, background 0.2s;
+  }
+
+  .toggle.on::after { transform: translateX(18px); background: var(--teal); }
+
+  .font-size-control {
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .fs-btn {
+    width: 28px; height: 28px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .fs-val { font-family: 'Cinzel', serif; font-size: 14px; color: var(--gold); min-width: 30px; text-align: center; }
+
+  /* OVERLAY */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 99;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .overlay.visible { opacity: 1; pointer-events: all; }
+
+  /* INTRO SCREEN */
+  .intro-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg-deep);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    animation: introFade 2.5s ease forwards;
+  }
+
+  @keyframes introFade {
+    0%,70% { opacity: 1; pointer-events: all; }
+    100% { opacity: 0; pointer-events: none; }
+  }
+
+  .intro-arabic {
+    font-family: 'Amiri', serif;
+    font-size: 72px;
+    color: var(--gold);
+    direction: rtl;
+    animation: introRise 1s ease both;
+  }
+
+  .intro-subtitle {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    letter-spacing: 6px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    animation: introRise 1s ease 0.3s both;
+  }
+
+  @keyframes introRise {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateX(calc(var(--sidebar-w)/2));
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-active);
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 13px;
+    color: var(--gold);
+    z-index: 500;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+
+  .toast.show { opacity: 1; }
+
+  /* MOBILE */
+  @media (max-width: 768px) {
+    :root { --sidebar-w: 0px; }
+
+    .sidebar {
+      width: 280px;
+      transform: translateX(-100%);
+      box-shadow: var(--shadow);
+    }
+
+    .sidebar.open { transform: translateX(0); }
+
+    .main { margin-left: 0; }
+
+    .menu-btn { display: flex; }
+
+    .floating-progress {
+      transform: translateX(-50%);
+      bottom: 16px;
+    }
+
+    .toast { transform: translateX(-50%); }
+
+    .topbar { padding: 10px 16px; gap: 10px; }
+
+    .surah-header { padding: 24px 16px 20px; }
+
+    .surah-header-arabic { font-size: 36px; }
+
+    .bismillah { margin: 0 16px 8px; font-size: 28px; }
+
+    .verses-container { padding: 8px 16px 120px; }
+
+    .verse-arabic { font-size: 22px; }
+
+    .action-btn span { display: none; }
+    .action-btn { padding: 0 10px; }
+
+    .settings-panel { width: 260px; }
+  }
+
+  /* ANIMATIONS */
+  .verse-card {
+    animation: cardIn 0.3s ease both;
+  }
+
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .verse-card:nth-child(1) { animation-delay: 0.02s; }
+  .verse-card:nth-child(2) { animation-delay: 0.04s; }
+  .verse-card:nth-child(3) { animation-delay: 0.06s; }
+  .verse-card:nth-child(4) { animation-delay: 0.08s; }
+  .verse-card:nth-child(5) { animation-delay: 0.10s; }
+  .verse-card:nth-child(6) { animation-delay: 0.12s; }
+  .verse-card:nth-child(7) { animation-delay: 0.14s; }
+
+  /* Geometric ornament */
+  .ornament {
+    width: 60px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 0 auto 16px;
+  }
+
+  /* SESSION TIMER */
+  .session-timer {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .timer-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); animation: pulse 2s infinite; }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+</style>
+</head>
+<body>
+
+<!-- INTRO -->
+<div class="intro-screen" id="introScreen">
+  <div class="intro-arabic">القرآن الكريم</div>
+  <div class="ornament"></div>
+  <div class="intro-subtitle">Al-Quran Noble</div>
+</div>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="closeAll()"></div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<div class="app-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">ق</div>
+      <div class="logo-text">
+        <div class="logo-arabic">القرآن الكريم</div>
+        <div class="logo-fr">Al-Quran Noble</div>
+      </div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="progress-panel">
+      <div class="progress-title">
+        <span>Progression</span>
+        <div class="session-timer"><div class="timer-dot"></div><span id="sessionTime">0:00</span></div>
+      </div>
+      <div class="progress-stats">
+        <div class="stat-box">
+          <div class="stat-num" id="statVerses">0</div>
+          <div class="stat-label">Versets lus</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="statSurahs">0</div>
+          <div class="stat-label">Sourates</div>
+        </div>
+      </div>
+      <div class="overall-bar-wrap">
+        <div class="bar-label">
+          <span>Quran complet</span>
+          <span id="overallPct">0%</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" id="overallBar" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STREAK -->
+    <div class="streak-row">
+      <div class="streak-fire">🔥</div>
+      <div class="streak-info">
+        <div class="streak-num" id="streakNum">1</div>
+        <div class="streak-text">jour(s) consécutif(s)</div>
+      </div>
+    </div>
+
+    <!-- SEARCH -->
+    <div class="search-wrap">
+      <input class="search-box" type="text" placeholder="Rechercher une sourate…" id="searchInput" oninput="filterSurahs()">
+    </div>
+
+    <div class="surah-list-header">Sourates — 114</div>
+
+    <div class="surah-list" id="surahList"></div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <button class="menu-btn" id="menuBtn" onclick="toggleSidebar()">☰</button>
+
+      <div class="topbar-title">
+        <div class="topbar-surah-ar" id="topbarAr">Al-Fatiha</div>
+        <div class="topbar-surah-fr" id="topbarFr">L'Ouverture — 7 versets</div>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="action-btn" id="btnPhonetic" onclick="toggleSetting('phonetic')" title="Phonétique">
+          🔤 <span>Phonétique</span>
+        </button>
+        <button class="action-btn" id="btnFrench" onclick="toggleSetting('french')" title="Traduction">
+          🇫🇷 <span>Traduction</span>
+        </button>
+        <button class="action-btn" onclick="toggleSettings()">⚙️</button>
+      </div>
+    </div>
+
+    <!-- VERSE CONTENT -->
+    <div id="surahContent"></div>
+
+    <!-- FLOATING PROGRESS -->
+    <div class="floating-progress">
+      <div class="fp-progress">
+        <div class="fp-label">
+          <span id="fpSurahName">Al-Fatiha</span>
+          <span id="fpPct">0%</span>
+        </div>
+        <div class="fp-track">
+          <div class="fp-fill" id="fpFill" style="width:0%"></div>
+        </div>
+      </div>
+      <button class="fp-btn" onclick="nextUnread()" title="Verset suivant non lu">›</button>
+    </div>
+  </main>
+</div>
+
+<!-- SETTINGS PANEL -->
+<div class="settings-panel" id="settingsPanel">
+  <div class="settings-header">
+    <div class="settings-title">Paramètres</div>
+    <button class="close-btn" onclick="toggleSettings()">✕</button>
+  </div>
+
+  <div class="setting-section">
+    <div class="setting-section-title">Affichage</div>
+    <div class="setting-row">
+      <span class="setting-label">Phonétique</span>
+      <div class="toggle on" id="togglePhonetic" onclick="toggleSetting('phonetic')"></div>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Traduction française</span>
+      <div class="toggle on" id="toggleFrench" onclick="toggleSetting('french')"></div>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Arabe</span>
+      <div class="toggle on" id="toggleArabic" onclick="toggleSetting('arabic')"></div>
+    </div>
+  </div>
+
+  <div class="setting-section">
+    <div class="setting-section-title">Taille du texte arabe</div>
+    <div class="setting-row">
+      <span class="setting-label">Taille</span>
+      <div class="font-size-control">
+        <button class="fs-btn" onclick="changeFont(-2)">−</button>
+        <div class="fs-val" id="fsVal">28</div>
+        <button class="fs-btn" onclick="changeFont(2)">+</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="setting-section">
+    <div class="setting-section-title">Suivi de lecture</div>
+    <div class="setting-row">
+      <span class="setting-label">Marquer auto en lisant</span>
+      <div class="toggle on" id="toggleAutoRead" onclick="toggleSetting('autoRead')"></div>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Vibration (mobile)</span>
+      <div class="toggle" id="toggleVibrate" onclick="toggleSetting('vibrate')"></div>
+    </div>
+  </div>
+
+  <div class="setting-section">
+    <div class="setting-section-title">Données</div>
+    <div class="setting-row">
+      <span class="setting-label">Réinitialiser progression</span>
+      <button class="fs-btn" style="width:auto;padding:0 10px;font-size:11px;color:#f87171" onclick="resetProgress()">Reset</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA — Complete Quran Data (114 surahs, key surahs with full verses)
+// ============================================================
+
+const SURAHS = [
+  { num: 1, ar: "الفاتحة", translit: "Al-Fatiha", fr: "L'Ouverture", verses: 7, type: "Mecquoise", bismillah: true },
+  { num: 2, ar: "البقرة", translit: "Al-Baqara", fr: "La Vache", verses: 286, type: "Médinoise", bismillah: true },
+  { num: 3, ar: "آل عمران", translit: "Āl 'Imrān", fr: "La Famille d'Imran", verses: 200, type: "Médinoise", bismillah: true },
+  { num: 4, ar: "النساء", translit: "An-Nisa", fr: "Les Femmes", verses: 176, type: "Médinoise", bismillah: true },
+  { num: 5, ar: "المائدة", translit: "Al-Ma'ida", fr: "La Table Servie", verses: 120, type: "Médinoise", bismillah: true },
+  { num: 6, ar: "الأنعام", translit: "Al-An'am", fr: "Les Bestiaux", verses: 165, type: "Mecquoise", bismillah: true },
+  { num: 7, ar: "الأعراف", translit: "Al-A'raf", fr: "Le Mur d'Élévation", verses: 206, type: "Mecquoise", bismillah: true },
+  { num: 8, ar: "الأنفال", translit: "Al-Anfal", fr: "Le Butin", verses: 75, type: "Médinoise", bismillah: true },
+  { num: 9, ar: "التوبة", translit: "At-Tawba", fr: "Le Repentir", verses: 129, type: "Médinoise", bismillah: false },
+  { num: 10, ar: "يونس", translit: "Yunus", fr: "Jonas", verses: 109, type: "Mecquoise", bismillah: true },
+  { num: 11, ar: "هود", translit: "Hud", fr: "Hud", verses: 123, type: "Mecquoise", bismillah: true },
+  { num: 12, ar: "يوسف", translit: "Yusuf", fr: "Joseph", verses: 111, type: "Mecquoise", bismillah: true },
+  { num: 13, ar: "الرعد", translit: "Ar-Ra'd", fr: "Le Tonnerre", verses: 43, type: "Médinoise", bismillah: true },
+  { num: 14, ar: "ابراهيم", translit: "Ibrahim", fr: "Abraham", verses: 52, type: "Mecquoise", bismillah: true },
+  { num: 15, ar: "الحجر", translit: "Al-Hijr", fr: "Al-Hijr", verses: 99, type: "Mecquoise", bismillah: true },
+  { num: 16, ar: "النحل", translit: "An-Nahl", fr: "Les Abeilles", verses: 128, type: "Mecquoise", bismillah: true },
+  { num: 17, ar: "الإسراء", translit: "Al-Isra", fr: "Le Voyage Nocturne", verses: 111, type: "Mecquoise", bismillah: true },
+  { num: 18, ar: "الكهف", translit: "Al-Kahf", fr: "La Caverne", verses: 110, type: "Mecquoise", bismillah: true },
+  { num: 19, ar: "مريم", translit: "Maryam", fr: "Marie", verses: 98, type: "Mecquoise", bismillah: true },
+  { num: 20, ar: "طه", translit: "Ta-Ha", fr: "Ta-Ha", verses: 135, type: "Mecquoise", bismillah: true },
+  { num: 21, ar: "الأنبياء", translit: "Al-Anbiya", fr: "Les Prophètes", verses: 112, type: "Mecquoise", bismillah: true },
+  { num: 22, ar: "الحج", translit: "Al-Hajj", fr: "Le Pèlerinage", verses: 78, type: "Médinoise", bismillah: true },
+  { num: 23, ar: "المؤمنون", translit: "Al-Mu'minun", fr: "Les Croyants", verses: 118, type: "Mecquoise", bismillah: true },
+  { num: 24, ar: "النور", translit: "An-Nur", fr: "La Lumière", verses: 64, type: "Médinoise", bismillah: true },
+  { num: 25, ar: "الفرقان", translit: "Al-Furqan", fr: "Le Critère", verses: 77, type: "Mecquoise", bismillah: true },
+  { num: 26, ar: "الشعراء", translit: "Ash-Shu'ara", fr: "Les Poètes", verses: 227, type: "Mecquoise", bismillah: true },
+  { num: 27, ar: "النمل", translit: "An-Naml", fr: "La Fourmi", verses: 93, type: "Mecquoise", bismillah: true },
+  { num: 28, ar: "القصص", translit: "Al-Qasas", fr: "Le Récit", verses: 88, type: "Mecquoise", bismillah: true },
+  { num: 29, ar: "العنكبوت", translit: "Al-'Ankabut", fr: "L'Araignée", verses: 69, type: "Mecquoise", bismillah: true },
+  { num: 30, ar: "الروم", translit: "Ar-Rum", fr: "Les Romains", verses: 60, type: "Mecquoise", bismillah: true },
+  { num: 31, ar: "لقمان", translit: "Luqman", fr: "Luqman", verses: 34, type: "Mecquoise", bismillah: true },
+  { num: 32, ar: "السجدة", translit: "As-Sajda", fr: "La Prosternation", verses: 30, type: "Mecquoise", bismillah: true },
+  { num: 33, ar: "الأحزاب", translit: "Al-Ahzab", fr: "Les Coalisés", verses: 73, type: "Médinoise", bismillah: true },
+  { num: 34, ar: "سبإ", translit: "Saba", fr: "Saba", verses: 54, type: "Mecquoise", bismillah: true },
+  { num: 35, ar: "فاطر", translit: "Fatir", fr: "Le Créateur", verses: 45, type: "Mecquoise", bismillah: true },
+  { num: 36, ar: "يس", translit: "Ya-Sin", fr: "Ya-Sin", verses: 83, type: "Mecquoise", bismillah: true },
+  { num: 37, ar: "الصافات", translit: "As-Saffat", fr: "Ceux qui Se Rangent", verses: 182, type: "Mecquoise", bismillah: true },
+  { num: 38, ar: "ص", translit: "Sad", fr: "Sad", verses: 88, type: "Mecquoise", bismillah: true },
+  { num: 39, ar: "الزمر", translit: "Az-Zumar", fr: "Les Groupes", verses: 75, type: "Mecquoise", bismillah: true },
+  { num: 40, ar: "غافر", translit: "Ghafir", fr: "Le Pardonneur", verses: 85, type: "Mecquoise", bismillah: true },
+  { num: 41, ar: "فصلت", translit: "Fussilat", fr: "Bien Expliquée", verses: 54, type: "Mecquoise", bismillah: true },
+  { num: 42, ar: "الشورى", translit: "Ash-Shura", fr: "La Consultation", verses: 53, type: "Mecquoise", bismillah: true },
+  { num: 43, ar: "الزخرف", translit: "Az-Zukhruf", fr: "L'Ornement", verses: 89, type: "Mecquoise", bismillah: true },
+  { num: 44, ar: "الدخان", translit: "Ad-Dukhan", fr: "La Fumée", verses: 59, type: "Mecquoise", bismillah: true },
+  { num: 45, ar: "الجاثية", translit: "Al-Jathiya", fr: "L'Agenouillée", verses: 37, type: "Mecquoise", bismillah: true },
+  { num: 46, ar: "الأحقاف", translit: "Al-Ahqaf", fr: "Les Dunes", verses: 35, type: "Mecquoise", bismillah: true },
+  { num: 47, ar: "محمد", translit: "Muhammad", fr: "Muhammad", verses: 38, type: "Médinoise", bismillah: true },
+  { num: 48, ar: "الفتح", translit: "Al-Fath", fr: "La Victoire", verses: 29, type: "Médinoise", bismillah: true },
+  { num: 49, ar: "الحجرات", translit: "Al-Hujurat", fr: "Les Appartements", verses: 18, type: "Médinoise", bismillah: true },
+  { num: 50, ar: "ق", translit: "Qaf", fr: "Qaf", verses: 45, type: "Mecquoise", bismillah: true },
+  { num: 51, ar: "الذاريات", translit: "Adh-Dhariyat", fr: "Les Dispersants", verses: 60, type: "Mecquoise", bismillah: true },
+  { num: 52, ar: "الطور", translit: "At-Tur", fr: "Le Mont Sinaï", verses: 49, type: "Mecquoise", bismillah: true },
+  { num: 53, ar: "النجم", translit: "An-Najm", fr: "L'Étoile", verses: 62, type: "Mecquoise", bismillah: true },
+  { num: 54, ar: "القمر", translit: "Al-Qamar", fr: "La Lune", verses: 55, type: "Mecquoise", bismillah: true },
+  { num: 55, ar: "الرحمن", translit: "Ar-Rahman", fr: "Le Tout Miséricordieux", verses: 78, type: "Médinoise", bismillah: true },
+  { num: 56, ar: "الواقعة", translit: "Al-Waqi'a", fr: "L'Événement", verses: 96, type: "Mecquoise", bismillah: true },
+  { num: 57, ar: "الحديد", translit: "Al-Hadid", fr: "Le Fer", verses: 29, type: "Médinoise", bismillah: true },
+  { num: 58, ar: "المجادلة", translit: "Al-Mujadala", fr: "La Femme qui Discute", verses: 22, type: "Médinoise", bismillah: true },
+  { num: 59, ar: "الحشر", translit: "Al-Hashr", fr: "Le Rassemblement", verses: 24, type: "Médinoise", bismillah: true },
+  { num: 60, ar: "الممتحنة", translit: "Al-Mumtahana", fr: "La Femme Éprouvée", verses: 13, type: "Médinoise", bismillah: true },
+  { num: 61, ar: "الصف", translit: "As-Saf", fr: "Le Rang", verses: 14, type: "Médinoise", bismillah: true },
+  { num: 62, ar: "الجمعة", translit: "Al-Jumu'a", fr: "Le Vendredi", verses: 11, type: "Médinoise", bismillah: true },
+  { num: 63, ar: "المنافقون", translit: "Al-Munafiqun", fr: "Les Hypocrites", verses: 11, type: "Médinoise", bismillah: true },
+  { num: 64, ar: "التغابن", translit: "At-Taghabun", fr: "La Déception Mutuelle", verses: 18, type: "Médinoise", bismillah: true },
+  { num: 65, ar: "الطلاق", translit: "At-Talaq", fr: "Le Divorce", verses: 12, type: "Médinoise", bismillah: true },
+  { num: 66, ar: "التحريم", translit: "At-Tahrim", fr: "L'Interdiction", verses: 12, type: "Médinoise", bismillah: true },
+  { num: 67, ar: "الملك", translit: "Al-Mulk", fr: "La Royauté", verses: 30, type: "Mecquoise", bismillah: true },
+  { num: 68, ar: "القلم", translit: "Al-Qalam", fr: "La Plume", verses: 52, type: "Mecquoise", bismillah: true },
+  { num: 69, ar: "الحاقة", translit: "Al-Haqqa", fr: "L'Inévitable", verses: 52, type: "Mecquoise", bismillah: true },
+  { num: 70, ar: "المعارج", translit: "Al-Ma'arij", fr: "Les Voies d'Ascension", verses: 44, type: "Mecquoise", bismillah: true },
+  { num: 71, ar: "نوح", translit: "Nuh", fr: "Noé", verses: 28, type: "Mecquoise", bismillah: true },
+  { num: 72, ar: "الجن", translit: "Al-Jinn", fr: "Les Djinns", verses: 28, type: "Mecquoise", bismillah: true },
+  { num: 73, ar: "المزمل", translit: "Al-Muzzammil", fr: "L'Enveloppé", verses: 20, type: "Mecquoise", bismillah: true },
+  { num: 74, ar: "المدثر", translit: "Al-Muddaththir", fr: "Le Couvert d'un Manteau", verses: 56, type: "Mecquoise", bismillah: true },
+  { num: 75, ar: "القيامة", translit: "Al-Qiyama", fr: "La Résurrection", verses: 40, type: "Mecquoise", bismillah: true },
+  { num: 76, ar: "الإنسان", translit: "Al-Insan", fr: "L'Homme", verses: 31, type: "Médinoise", bismillah: true },
+  { num: 77, ar: "المرسلات", translit: "Al-Mursalat", fr: "Les Envoyés", verses: 50, type: "Mecquoise", bismillah: true },
+  { num: 78, ar: "النبإ", translit: "An-Naba", fr: "La Nouvelle", verses: 40, type: "Mecquoise", bismillah: true },
+  { num: 79, ar: "النازعات", translit: "An-Nazi'at", fr: "Ceux qui Arrachent", verses: 46, type: "Mecquoise", bismillah: true },
+  { num: 80, ar: "عبس", translit: "'Abasa", fr: "Il s'est Renfrogné", verses: 42, type: "Mecquoise", bismillah: true },
+  { num: 81, ar: "التكوير", translit: "At-Takwir", fr: "L'Enroulement", verses: 29, type: "Mecquoise", bismillah: true },
+  { num: 82, ar: "الانفطار", translit: "Al-Infitar", fr: "La Déchirure", verses: 19, type: "Mecquoise", bismillah: true },
+  { num: 83, ar: "المطففين", translit: "Al-Mutaffifin", fr: "Les Fraudeurs", verses: 36, type: "Mecquoise", bismillah: true },
+  { num: 84, ar: "الانشقاق", translit: "Al-Inshiqaq", fr: "La Fissuration", verses: 25, type: "Mecquoise", bismillah: true },
+  { num: 85, ar: "البروج", translit: "Al-Buruj", fr: "Les Constellations", verses: 22, type: "Mecquoise", bismillah: true },
+  { num: 86, ar: "الطارق", translit: "At-Tariq", fr: "L'Astre Nocturne", verses: 17, type: "Mecquoise", bismillah: true },
+  { num: 87, ar: "الأعلى", translit: "Al-A'la", fr: "Le Très-Haut", verses: 19, type: "Mecquoise", bismillah: true },
+  { num: 88, ar: "الغاشية", translit: "Al-Ghashiya", fr: "L'Enveloppant", verses: 26, type: "Mecquoise", bismillah: true },
+  { num: 89, ar: "الفجر", translit: "Al-Fajr", fr: "L'Aube", verses: 30, type: "Mecquoise", bismillah: true },
+  { num: 90, ar: "البلد", translit: "Al-Balad", fr: "La Cité", verses: 20, type: "Mecquoise", bismillah: true },
+  { num: 91, ar: "الشمس", translit: "Ash-Shams", fr: "Le Soleil", verses: 15, type: "Mecquoise", bismillah: true },
+  { num: 92, ar: "الليل", translit: "Al-Layl", fr: "La Nuit", verses: 21, type: "Mecquoise", bismillah: true },
+  { num: 93, ar: "الضحى", translit: "Ad-Duha", fr: "La Matinée", verses: 11, type: "Mecquoise", bismillah: true },
+  { num: 94, ar: "الشرح", translit: "Ash-Sharh", fr: "L'Ouverture", verses: 8, type: "Mecquoise", bismillah: true },
+  { num: 95, ar: "التين", translit: "At-Tin", fr: "Le Figuier", verses: 8, type: "Mecquoise", bismillah: true },
+  { num: 96, ar: "العلق", translit: "Al-'Alaq", fr: "La Adhérence", verses: 19, type: "Mecquoise", bismillah: true },
+  { num: 97, ar: "القدر", translit: "Al-Qadr", fr: "La Nuit du Destin", verses: 5, type: "Mecquoise", bismillah: true },
+  { num: 98, ar: "البينة", translit: "Al-Bayyina", fr: "La Preuve", verses: 8, type: "Médinoise", bismillah: true },
+  { num: 99, ar: "الزلزلة", translit: "Az-Zalzala", fr: "Le Séisme", verses: 8, type: "Médinoise", bismillah: true },
+  { num: 100, ar: "العاديات", translit: "Al-'Adiyat", fr: "Les Coursiers", verses: 11, type: "Mecquoise", bismillah: true },
+  { num: 101, ar: "القارعة", translit: "Al-Qari'a", fr: "Le Fracas", verses: 11, type: "Mecquoise", bismillah: true },
+  { num: 102, ar: "التكاثر", translit: "At-Takathur", fr: "La Course aux Richesses", verses: 8, type: "Mecquoise", bismillah: true },
+  { num: 103, ar: "العصر", translit: "Al-'Asr", fr: "Le Temps", verses: 3, type: "Mecquoise", bismillah: true },
+  { num: 104, ar: "الهمزة", translit: "Al-Humaza", fr: "Le Médisant", verses: 9, type: "Mecquoise", bismillah: true },
+  { num: 105, ar: "الفيل", translit: "Al-Fil", fr: "L'Éléphant", verses: 5, type: "Mecquoise", bismillah: true },
+  { num: 106, ar: "قريش", translit: "Quraysh", fr: "Les Quraysh", verses: 4, type: "Mecquoise", bismillah: true },
+  { num: 107, ar: "الماعون", translit: "Al-Ma'un", fr: "Les Ustensiles", verses: 7, type: "Mecquoise", bismillah: true },
+  { num: 108, ar: "الكوثر", translit: "Al-Kawthar", fr: "L'Abondance", verses: 3, type: "Mecquoise", bismillah: true },
+  { num: 109, ar: "الكافرون", translit: "Al-Kafirun", fr: "Les Mécréants", verses: 6, type: "Mecquoise", bismillah: true },
+  { num: 110, ar: "النصر", translit: "An-Nasr", fr: "Le Secours", verses: 3, type: "Médinoise", bismillah: true },
+  { num: 111, ar: "المسد", translit: "Al-Masad", fr: "Les Fibres", verses: 5, type: "Mecquoise", bismillah: true },
+  { num: 112, ar: "الإخلاص", translit: "Al-Ikhlas", fr: "La Sincérité", verses: 4, type: "Mecquoise", bismillah: true },
+  { num: 113, ar: "الفلق", translit: "Al-Falaq", fr: "L'Aube Naissante", verses: 5, type: "Mecquoise", bismillah: true },
+  { num: 114, ar: "الناس", translit: "An-Nas", fr: "Les Hommes", verses: 6, type: "Mecquoise", bismillah: true }
+];
+
+// Full verse data for key surahs
+const VERSE_DATA = {
+  1: [
+    { ar: "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ", ph: "Bismi llāhi r-raḥmāni r-raḥīm", fr: "Au nom d'Allah, le Tout Miséricordieux, le Très Miséricordieux." },
+    { ar: "الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ", ph: "Al-ḥamdu li-llāhi rabbi l-ʿālamīn", fr: "Louange à Allah, Seigneur des mondes." },
+    { ar: "الرَّحْمَٰنِ الرَّحِيمِ", ph: "Ar-raḥmāni r-raḥīm", fr: "Le Tout Miséricordieux, le Très Miséricordieux," },
+    { ar: "مَالِكِ يَوْمِ الدِّينِ", ph: "Māliki yawmi d-dīn", fr: "Maître du Jour de la rétribution." },
+    { ar: "إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ", ph: "Iyyāka naʿbudu wa-iyyāka nastaʿīn", fr: "C'est Toi [Seul] que nous adorons, et c'est Toi [Seul] dont nous implorons le secours." },
+    { ar: "اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ", ph: "Ihdina ṣ-ṣirāṭa l-mustaqīm", fr: "Guide-nous dans le droit chemin," },
+    { ar: "صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ", ph: "Ṣirāṭa lladhīna anʿamta ʿalayhim ghayri l-maghḍūbi ʿalayhim wa-lā ḍ-ḍāllīn", fr: "le chemin de ceux que Tu as comblés de bienfaits, non pas de ceux qui ont encouru Ta colère, ni des égarés." }
+  ],
+  112: [
+    { ar: "قُلْ هُوَ اللَّهُ أَحَدٌ", ph: "Qul huwa llāhu aḥad", fr: "Dis : «Il est Allah, [l'Unique]." },
+    { ar: "اللَّهُ الصَّمَدُ", ph: "Allāhu ṣ-ṣamad", fr: "Allah, le Seul à être imploré pour ce que nous désirons." },
+    { ar: "لَمْ يَلِدْ وَلَمْ يُولَدْ", ph: "Lam yalid wa-lam yūlad", fr: "Il n'a jamais engendré, n'a pas été engendré non plus." },
+    { ar: "وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ", ph: "Wa-lam yakun lahu kufuwan aḥad", fr: "Et nul n'est égal à Lui.»" }
+  ],
+  113: [
+    { ar: "قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ", ph: "Qul aʿūdhu bi-rabbi l-falaq", fr: "Dis : «Je cherche protection auprès du Seigneur de l'aube naissante," },
+    { ar: "مِن شَرِّ مَا خَلَقَ", ph: "Min sharri mā khalaq", fr: "contre le mal de ce qu'Il a créé," },
+    { ar: "وَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ", ph: "Wa-min sharri ghāsiqin idhā waqab", fr: "contre le mal de l'obscurité quand elle s'étend," },
+    { ar: "وَمِن شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ", ph: "Wa-min sharri n-naffāthāti fī l-ʿuqad", fr: "contre le mal de celles qui soufflent sur les nœuds," },
+    { ar: "وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ", ph: "Wa-min sharri ḥāsidin idhā ḥasad", fr: "et contre le mal de l'envieux quand il envie.»" }
+  ],
+  114: [
+    { ar: "قُلْ أَعُوذُ بِرَبِّ النَّاسِ", ph: "Qul aʿūdhu bi-rabbi n-nās", fr: "Dis : «Je cherche protection auprès du Seigneur des hommes," },
+    { ar: "مَلِكِ النَّاسِ", ph: "Maliki n-nās", fr: "du Roi des hommes," },
+    { ar: "إِلَٰهِ النَّاسِ", ph: "Ilāhi n-nās", fr: "du Dieu des hommes," },
+    { ar: "مِن شَرِّ الْوَسْوَاسِ الْخَنَّاسِ", ph: "Min sharri l-waswāsi l-khannās", fr: "contre le mal du tentateur qui se dérobe," },
+    { ar: "الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ", ph: "Alladhī yuwaswisu fī ṣudūri n-nās", fr: "qui souffle le mal dans les poitrines des hommes," },
+    { ar: "مِنَ الْجِنَّةِ وَالنَّاسِ", ph: "Mina l-jinnati wa-n-nās", fr: "qu'il soit djinn ou homme.»" }
+  ],
+  97: [
+    { ar: "إِنَّا أَنزَلْنَاهُ فِي لَيْلَةِ الْقَدْرِ", ph: "Innā anzalnāhu fī laylati l-qadr", fr: "Nous l'avons certes révélé [le Coran] pendant la nuit d'Al-Qadr." },
+    { ar: "وَمَا أَدْرَاكَ مَا لَيْلَةُ الْقَدْرِ", ph: "Wa-mā adrāka mā laylatu l-qadr", fr: "Et qui te dira ce qu'est la nuit d'Al-Qadr ?" },
+    { ar: "لَيْلَةُ الْقَدْرِ خَيْرٌ مِّنْ أَلْفِ شَهْرٍ", ph: "Laylatu l-qadri khayrun min alfi shahr", fr: "La nuit d'Al-Qadr est meilleure que mille mois." },
+    { ar: "تَنَزَّلُ الْمَلَائِكَةُ وَالرُّوحُ فِيهَا بِإِذْنِ رَبِّهِم مِّن كُلِّ أَمْرٍ", ph: "Tanazzalu l-malāikatu wa-r-rūḥu fīhā bi-idhni rabbihim min kulli amr", fr: "Les Anges ainsi que Gibril descendent durant cette nuit, avec la permission de leur Seigneur pour tout ordre." },
+    { ar: "سَلَامٌ هِيَ حَتَّىٰ مَطْلَعِ الْفَجْرِ", ph: "Salāmun hiya ḥattā maṭlaʿi l-fajr", fr: "Elle est paix et salut jusqu'à l'apparition de l'aube." }
+  ],
+  103: [
+    { ar: "وَالْعَصْرِ", ph: "Wa-l-ʿaṣr", fr: "Par le Temps !" },
+    { ar: "إِنَّ الْإِنسَانَ لَفِي خُسْرٍ", ph: "Inna l-insāna la-fī khusr", fr: "L'être humain est certes en perdition," },
+    { ar: "إِلَّا الَّذِينَ آمَنُوا وَعَمِلُوا الصَّالِحَاتِ وَتَوَاصَوْا بِالْحَقِّ وَتَوَاصَوْا بِالصَّبْرِ", ph: "Illā lladhīna āmanū wa-ʿamilū ṣ-ṣāliḥāti wa-tawāṣaw bi-l-ḥaqqi wa-tawāṣaw bi-ṣ-ṣabr", fr: "sauf ceux qui ont la foi, font de bonnes œuvres, s'enjoignent mutuellement la vérité et s'enjoignent mutuellement l'endurance." }
+  ],
+  108: [
+    { ar: "إِنَّا أَعْطَيْنَاكَ الْكَوْثَرَ", ph: "Innā aʿṭaynāka l-kawthar", fr: "Nous t'avons certes donné l'Abondance." },
+    { ar: "فَصَلِّ لِرَبِّكَ وَانْحَرْ", ph: "Fa-ṣalli li-rabbika wa-nḥar", fr: "Accomplis donc la Prière pour ton Seigneur, et immole." },
+    { ar: "إِنَّ شَانِئَكَ هُوَ الْأَبْتَرُ", ph: "Inna shāniaka huwa l-abtar", fr: "C'est bien ton ennemi qui est sans postérité." }
+  ],
+  110: [
+    { ar: "إِذَا جَاءَ نَصْرُ اللَّهِ وَالْفَتْحُ", ph: "Idhā jāa naṣru llāhi wa-l-fatḥ", fr: "Quand arrive le secours d'Allah et la victoire," },
+    { ar: "وَرَأَيْتَ النَّاسَ يَدْخُلُونَ فِي دِينِ اللَّهِ أَفْوَاجًا", ph: "Wa-raʾayta n-nāsa yadkhulūna fī dīni llāhi afwājā", fr: "et que tu vois les gens entrer en foule dans la religion d'Allah," },
+    { ar: "فَسَبِّحْ بِحَمْدِ رَبِّكَ وَاسْتَغْفِرْهُ إِنَّهُ كَانَ تَوَّابًا", ph: "Fa-sabbiḥ bi-ḥamdi rabbika wa-staghfirhu innahu kāna tawwābā", fr: "alors, célèbre les louanges de ton Seigneur et implore Son pardon. Certes, Il est Grand Accueillant au repentir." }
+  ]
+};
+
+// Cache for API-loaded verses
+const verseCache = {};
+
+// Fetch surah from alquran.cloud API (arabic + french + transliteration)
+async function fetchSurahFromAPI(num) {
+  if (verseCache[num]) return verseCache[num];
+
+  try {
+    // Fetch arabic, french translation, and transliteration in parallel
+    const [arRes, frRes, phRes] = await Promise.all([
+      fetch(`https://api.alquran.cloud/v1/surah/${num}/ar.asad`),
+      fetch(`https://api.alquran.cloud/v1/surah/${num}/fr.hamidullah`),
+      fetch(`https://api.alquran.cloud/v1/surah/${num}/en.transliteration`)
+    ]);
+
+    const [arData, frData, phData] = await Promise.all([
+      arRes.json(), frRes.json(), phRes.json()
+    ]);
+
+    if (arData.code !== 200 || frData.code !== 200) return null;
+
+    const arAyahs = arData.data.ayahs;
+    const frAyahs = frData.data.ayahs;
+    const phAyahs = phData.data.ayahs;
+
+    const verses = arAyahs.map((a, i) => ({
+      ar: a.text,
+      ph: phAyahs[i] ? phAyahs[i].text : '',
+      fr: frAyahs[i] ? frAyahs[i].text : ''
+    }));
+
+    verseCache[num] = verses;
+    return verses;
+  } catch(e) {
+    console.error('API error:', e);
+    return null;
+  }
+}
+
+// Fallback placeholder (only shown during loading)
+function loadingPlaceholder(count) {
+  return Array.from({length: count}, (_, i) => ({
+    ar: '﴿ جارٍ التحميل ﴾',
+    ph: 'Chargement en cours…',
+    fr: 'Chargement du verset depuis l\'API…'
+  }));
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  currentSurah: 1,
+  currentVerse: 0,
+  readVerses: {},      // {surahNum: Set of verse indices}
+  bookmarks: {},       // {surahNum: Set of verse indices}
+  settings: {
+    showPhonetic: true,
+    showFrench: true,
+    showArabic: true,
+    autoRead: true,
+    vibrate: false,
+    fontSize: 28
+  },
+  streak: 1,
+  sessionStart: Date.now(),
+  totalVerses: 6236
+};
+
+// Load from localStorage
+function loadState() {
+  try {
+    const saved = localStorage.getItem('quran_state');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      state.readVerses = {};
+      if (parsed.readVerses) {
+        Object.entries(parsed.readVerses).forEach(([k, v]) => {
+          state.readVerses[k] = new Set(v);
+        });
+      }
+      state.bookmarks = {};
+      if (parsed.bookmarks) {
+        Object.entries(parsed.bookmarks).forEach(([k, v]) => {
+          state.bookmarks[k] = new Set(v);
+        });
+      }
+      if (parsed.settings) state.settings = { ...state.settings, ...parsed.settings };
+      if (parsed.currentSurah) state.currentSurah = parsed.currentSurah;
+      if (parsed.streak) state.streak = parsed.streak;
+    }
+  } catch(e) {}
+}
+
+function saveState() {
+  try {
+    const toSave = {
+      readVerses: {},
+      bookmarks: {},
+      settings: state.settings,
+      currentSurah: state.currentSurah,
+      streak: state.streak
+    };
+    Object.entries(state.readVerses).forEach(([k, v]) => {
+      toSave.readVerses[k] = [...v];
+    });
+    Object.entries(state.bookmarks).forEach(([k, v]) => {
+      toSave.bookmarks[k] = [...v];
+    });
+    localStorage.setItem('quran_state', JSON.stringify(toSave));
+  } catch(e) {}
+}
+
+// ============================================================
+// COMPUTED
+// ============================================================
+function getReadCount() {
+  let total = 0;
+  Object.values(state.readVerses).forEach(s => total += s.size);
+  return total;
+}
+
+function getSurahsStarted() {
+  return Object.keys(state.readVerses).filter(k => state.readVerses[k].size > 0).length;
+}
+
+function getSurahProgress(surahNum) {
+  const surah = SURAHS[surahNum - 1];
+  const read = state.readVerses[surahNum];
+  if (!read || read.size === 0) return 0;
+  return Math.round((read.size / surah.verses) * 100);
+}
+
+// ============================================================
+// RENDER SIDEBAR
+// ============================================================
+function renderSidebar() {
+  const list = document.getElementById('surahList');
+  const query = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = SURAHS.filter(s =>
+    s.translit.toLowerCase().includes(query) ||
+    s.fr.toLowerCase().includes(query) ||
+    s.ar.includes(query) ||
+    String(s.num).includes(query)
+  );
+
+  list.innerHTML = filtered.map(s => {
+    const prog = getSurahProgress(s.num);
+    return `<div class="surah-item${s.num === state.currentSurah ? ' active' : ''}${prog > 0 ? ' has-progress' : ''}" onclick="loadSurah(${s.num})">
+      <div class="surah-num">${s.num}</div>
+      <div class="surah-names">
+        <div class="surah-name-ar">${s.ar}</div>
+        <div class="surah-name-fr">${s.translit} — ${s.fr}</div>
+      </div>
+      <div class="surah-meta">
+        <div class="surah-verses">${s.verses}v</div>
+        <div class="surah-type">${s.type.substring(0, 3).toUpperCase()}</div>
+      </div>
+      <div class="surah-progress-dot"></div>
+    </div>`;
+  }).join('');
+
+  // Update stats
+  const read = getReadCount();
+  const surahs = getSurahsStarted();
+  const pct = Math.round((read / state.totalVerses) * 100 * 10) / 10;
+
+  document.getElementById('statVerses').textContent = read;
+  document.getElementById('statSurahs').textContent = surahs;
+  document.getElementById('overallPct').textContent = pct + '%';
+  document.getElementById('overallBar').style.width = pct + '%';
+  document.getElementById('streakNum').textContent = state.streak;
+}
+
+function filterSurahs() {
+  renderSidebar();
+}
+
+// ============================================================
+// RENDER SURAH
+// ============================================================
+function buildSurahShell(num, verses, loading = false) {
+  const surah = SURAHS[num - 1];
+  const showBismillah = surah.bismillah && num !== 1 && num !== 9;
+  const prog = getSurahProgress(num);
+
+  return `
+    <div class="surah-header">
+      <div class="surah-header-ornament">❖</div>
+      <div class="surah-header-number">Sourate ${num} sur 114</div>
+      <div class="surah-header-arabic">${surah.ar}</div>
+      <div class="ornament"></div>
+      <div class="surah-header-transliteration">${surah.translit}</div>
+      <div class="surah-header-french">« ${surah.fr} »</div>
+      <div class="surah-header-info">
+        <div class="surah-badge">${surah.verses} Versets</div>
+        <div class="surah-badge revealed">${surah.type}</div>
+        ${prog > 0 ? `<div class="surah-badge" style="border-color:var(--teal-dim);color:var(--teal)">${prog}% lu</div>` : ''}
+        ${loading ? `<div class="surah-badge" style="border-color:var(--gold-dim);color:var(--gold);animation:pulse 1s infinite">⟳ Chargement…</div>` : ''}
+      </div>
+    </div>
+    ${showBismillah ? `<div class="bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>` : ''}
+    <div class="verses-container" id="versesContainer">
+      ${renderVerses(num, verses)}
+    </div>
+  `;
+}
+
+async function loadSurah(num) {
+  state.currentSurah = num;
+  const surah = SURAHS[num - 1];
+
+  // Topbar
+  document.getElementById('topbarAr').textContent = surah.ar;
+  document.getElementById('topbarFr').textContent = `${surah.translit} — ${surah.verses} versets`;
+
+  const content = document.getElementById('surahContent');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Close sidebar on mobile
+  if (window.innerWidth <= 768) {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('visible');
+  }
+
+  // If we have hardcoded data, show immediately
+  if (VERSE_DATA[num]) {
+    content.innerHTML = buildSurahShell(num, VERSE_DATA[num], false);
+    updateFloatingProgress();
+    renderSidebar();
+    saveState();
+    setTimeout(observeVerses, 100);
+    return;
+  }
+
+  // If already cached from API
+  if (verseCache[num]) {
+    content.innerHTML = buildSurahShell(num, verseCache[num], false);
+    updateFloatingProgress();
+    renderSidebar();
+    saveState();
+    setTimeout(observeVerses, 100);
+    return;
+  }
+
+  // Show loading skeleton
+  const placeholder = loadingPlaceholder(Math.min(surah.verses, 5));
+  content.innerHTML = buildSurahShell(num, placeholder, true);
+  updateFloatingProgress();
+  renderSidebar();
+
+  // Fetch from API
+  const verses = await fetchSurahFromAPI(num);
+
+  // Make sure we're still on same surah
+  if (state.currentSurah !== num) return;
+
+  if (verses && verses.length > 0) {
+    content.innerHTML = buildSurahShell(num, verses, false);
+    showToast('Sourate chargée ✓');
+  } else {
+    // API failed — show message
+    content.innerHTML = buildSurahShell(num, [{
+      ar: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+      ph: 'Connexion internet requise',
+      fr: '⚠️ Impossible de charger les versets. Vérifiez votre connexion internet et réessayez.'
+    }], false);
+    showToast('⚠️ Erreur de chargement');
+  }
+
+  updateFloatingProgress();
+  saveState();
+  setTimeout(observeVerses, 100);
+}
+
+function renderVerses(surahNum, verses) {
+  const readSet = state.readVerses[surahNum] || new Set();
+  const bookSet = state.bookmarks[surahNum] || new Set();
+
+  return verses.map((v, i) => {
+    const isRead = readSet.has(i);
+    const isBookmarked = bookSet.has(i);
+    return `
+    <div class="verse-card${isRead ? ' read' : ''}" id="verse-${surahNum}-${i}" onclick="activateVerse(${surahNum}, ${i})">
+      <div class="read-indicator"></div>
+      <div class="verse-header">
+        <div class="verse-num-badge">${i + 1}</div>
+        <div class="verse-actions">
+          <button class="verse-action-btn${isBookmarked ? ' bookmarked' : ''}" onclick="toggleBookmark(event,${surahNum},${i})" title="Marquer-page">🔖</button>
+          <button class="verse-action-btn" onclick="markRead(event,${surahNum},${i})" title="${isRead ? 'Marquer non lu' : 'Marquer comme lu'}">
+            ${isRead ? '✓' : '○'}
+          </button>
+        </div>
+      </div>
+      ${state.settings.showArabic ? `<div class="verse-arabic" style="font-size:${state.settings.fontSize}px">${v.ar}</div>` : ''}
+      ${state.settings.showPhonetic ? `<div class="verse-phonetic"><div class="verse-phonetic-label">Phonétique</div>${v.ph}</div>` : ''}
+      ${state.settings.showFrench ? `<div class="verse-french"><div class="verse-french-label">Traduction</div>${v.fr}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function activateVerse(surahNum, idx) {
+  // Remove previous active
+  document.querySelectorAll('.verse-card.active').forEach(c => c.classList.remove('active'));
+  const card = document.getElementById(`verse-${surahNum}-${idx}`);
+  if (card) {
+    card.classList.add('active');
+    state.currentVerse = idx;
+  }
+
+  // Auto-mark as read
+  if (state.settings.autoRead) {
+    setTimeout(() => doMarkRead(surahNum, idx), 800);
+  }
+
+  if (state.settings.vibrate && navigator.vibrate) {
+    navigator.vibrate(20);
+  }
+}
+
+function markRead(e, surahNum, idx) {
+  e.stopPropagation();
+  doMarkRead(surahNum, idx);
+}
+
+function doMarkRead(surahNum, idx) {
+  if (!state.readVerses[surahNum]) state.readVerses[surahNum] = new Set();
+  const set = state.readVerses[surahNum];
+
+  if (set.has(idx)) {
+    set.delete(idx);
+  } else {
+    set.add(idx);
+    showToast('Verset marqué comme lu ✓');
+  }
+
+  // Re-render just this card
+  const card = document.getElementById(`verse-${surahNum}-${idx}`);
+  if (card) {
+    const isRead = set.has(idx);
+    const isBookmarked = (state.bookmarks[surahNum] || new Set()).has(idx);
+    card.className = `verse-card${isRead ? ' read' : ''}`;
+    card.querySelector('.read-indicator').style.opacity = isRead ? '1' : '0';
+    card.querySelector('.verse-action-btn:last-child').textContent = isRead ? '✓' : '○';
+  }
+
+  updateFloatingProgress();
+  renderSidebar();
+  saveState();
+}
+
+function toggleBookmark(e, surahNum, idx) {
+  e.stopPropagation();
+  if (!state.bookmarks[surahNum]) state.bookmarks[surahNum] = new Set();
+  const set = state.bookmarks[surahNum];
+  if (set.has(idx)) {
+    set.delete(idx);
+    showToast('Marque-page retiré');
+  } else {
+    set.add(idx);
+    showToast('Marque-page ajouté 🔖');
+  }
+
+  const card = document.getElementById(`verse-${surahNum}-${idx}`);
+  if (card) {
+    const btn = card.querySelector('.verse-action-btn.bookmarked, .verse-action-btn:first-child');
+    btn.classList.toggle('bookmarked', set.has(idx));
+  }
+  saveState();
+}
+
+function nextUnread() {
+  const surah = SURAHS[state.currentSurah - 1];
+  const readSet = state.readVerses[state.currentSurah] || new Set();
+  const total = surah.verses;
+
+  for (let i = state.currentVerse + 1; i < total; i++) {
+    if (!readSet.has(i)) {
+      const card = document.getElementById(`verse-${state.currentSurah}-${i}`);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        activateVerse(state.currentSurah, i);
+        return;
+      }
+    }
+  }
+
+  // All read or end — go to next surah
+  if (state.currentSurah < 114) {
+    showToast('Sourate terminée! Passage à la suivante…');
+    setTimeout(() => loadSurah(state.currentSurah + 1), 800);
+  } else {
+    showToast('🎉 Quran complet lu !');
+  }
+}
+
+function updateFloatingProgress() {
+  const surah = SURAHS[state.currentSurah - 1];
+  const prog = getSurahProgress(state.currentSurah);
+  document.getElementById('fpSurahName').textContent = surah.translit;
+  document.getElementById('fpPct').textContent = prog + '%';
+  document.getElementById('fpFill').style.width = prog + '%';
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function toggleSetting(key) {
+  const map = {
+    phonetic: 'showPhonetic',
+    french: 'showFrench',
+    arabic: 'showArabic',
+    autoRead: 'autoRead',
+    vibrate: 'vibrate'
+  };
+
+  const settingKey = map[key];
+  if (!settingKey) return;
+
+  state.settings[settingKey] = !state.settings[settingKey];
+
+  // Update toggles
+  const toggleMap = {
+    showPhonetic: ['togglePhonetic', 'btnPhonetic'],
+    showFrench: ['toggleFrench', 'btnFrench'],
+    showArabic: ['toggleArabic'],
+    autoRead: ['toggleAutoRead'],
+    vibrate: ['toggleVibrate']
+  };
+
+  const ids = toggleMap[settingKey] || [];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.classList.contains('toggle')) {
+      el.classList.toggle('on', state.settings[settingKey]);
+    } else {
+      el.classList.toggle('active', state.settings[settingKey]);
+    }
+  });
+
+  // Re-render current surah
+  loadSurah(state.currentSurah);
+  saveState();
+}
+
+function changeFont(delta) {
+  state.settings.fontSize = Math.max(18, Math.min(48, state.settings.fontSize + delta));
+  document.getElementById('fsVal').textContent = state.settings.fontSize;
+  loadSurah(state.currentSurah);
+  saveState();
+}
+
+function syncSettingsUI() {
+  const s = state.settings;
+  document.getElementById('togglePhonetic').classList.toggle('on', s.showPhonetic);
+  document.getElementById('toggleFrench').classList.toggle('on', s.showFrench);
+  document.getElementById('toggleArabic').classList.toggle('on', s.showArabic);
+  document.getElementById('toggleAutoRead').classList.toggle('on', s.autoRead);
+  document.getElementById('toggleVibrate').classList.toggle('on', s.vibrate);
+  document.getElementById('btnPhonetic').classList.toggle('active', s.showPhonetic);
+  document.getElementById('btnFrench').classList.toggle('active', s.showFrench);
+  document.getElementById('fsVal').textContent = s.fontSize;
+}
+
+function resetProgress() {
+  if (confirm('Réinitialiser toute la progression ?')) {
+    state.readVerses = {};
+    state.bookmarks = {};
+    saveState();
+    loadSurah(state.currentSurah);
+    showToast('Progression réinitialisée');
+  }
+}
+
+// ============================================================
+// UI CONTROLS
+// ============================================================
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('overlay');
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('visible', sidebar.classList.contains('open'));
+}
+
+function toggleSettings() {
+  const panel = document.getElementById('settingsPanel');
+  const overlay = document.getElementById('overlay');
+  panel.classList.toggle('open');
+  overlay.classList.toggle('visible', panel.classList.contains('open'));
+}
+
+function closeAll() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('settingsPanel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('visible');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+// Session timer
+setInterval(() => {
+  const elapsed = Math.floor((Date.now() - state.sessionStart) / 1000);
+  const m = Math.floor(elapsed / 60);
+  const s = elapsed % 60;
+  const el = document.getElementById('sessionTime');
+  if (el) el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+}, 1000);
+
+// ============================================================
+// INIT
+// ============================================================
+loadState();
+renderSidebar();
+syncSettingsUI();
+
+// Remove intro after animation
+setTimeout(() => {
+  const intro = document.getElementById('introScreen');
+  if (intro) intro.style.display = 'none';
+}, 2600);
+
+loadSurah(state.currentSurah);
+
+// Intersection Observer for auto-read on scroll
+const observer = new IntersectionObserver((entries) => {
+  if (!state.settings.autoRead) return;
+  entries.forEach(entry => {
+    if (entry.isIntersecting && entry.intersectionRatio > 0.7) {
+      const id = entry.target.id;
+      const parts = id.split('-');
+      if (parts.length === 3) {
+        const surahNum = parseInt(parts[1]);
+        const idx = parseInt(parts[2]);
+        if (!state.readVerses[surahNum]?.has(idx)) {
+          setTimeout(() => doMarkRead(surahNum, idx), 1500);
+        }
+      }
+    }
+  });
+}, { threshold: 0.7 });
+
+function observeVerses() {
+  document.querySelectorAll('.verse-card').forEach(card => observer.observe(card));
+}
+
+setTimeout(observeVerses, 800);
+</script>
+</body>
+</html>
