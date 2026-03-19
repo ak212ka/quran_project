@@ -45,6 +45,7 @@
     background: var(--bg-deep);
     color: var(--text-primary);
     min-height: 100vh;
+    min-height: 100dvh;
     overflow-x: hidden;
     position: relative;
   }
@@ -89,6 +90,7 @@
 
   .sidebar-logo {
     padding: 24px 20px 20px;
+    padding-top: max(24px, calc(env(safe-area-inset-top, 0px) + 16px));
     border-bottom: 1px solid var(--border);
     display: flex; align-items: center; gap: 12px;
   }
@@ -274,14 +276,82 @@
     position: sticky;
     top: 0;
     z-index: 50;
-    background: rgba(5,8,15,0.85);
+    background: rgba(5,8,15,0.95);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border);
     padding: 12px 24px;
+    padding-top: max(12px, env(safe-area-inset-top, 12px));
     display: flex;
     align-items: center;
     gap: 16px;
+  }
+
+  /* VERSE SEARCH PANEL */
+  .verse-search-panel {
+    background: rgba(5,8,15,0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 24px;
+    display: none;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .verse-search-panel.open { display: flex; }
+
+  .verse-search-input {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 9px 14px;
+    color: var(--text-primary);
+    font-family: 'Lato', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .verse-search-input:focus { border-color: var(--border-active); }
+  .verse-search-input::placeholder { color: var(--text-muted); }
+
+  .verse-search-close {
+    width: 34px; height: 34px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .verse-search-count {
+    font-size: 11px;
+    color: var(--teal);
+    font-family: 'Cinzel', serif;
+    white-space: nowrap;
+    min-width: 50px;
+    text-align: right;
+  }
+
+  /* Highlight matched text */
+  .search-highlight {
+    background: rgba(201,168,76,0.25);
+    color: var(--gold-light);
+    border-radius: 2px;
+    padding: 0 1px;
+  }
+
+  .verse-card.search-match {
+    border-color: rgba(201,168,76,0.4);
+  }
+
+  .verse-card.search-hidden {
+    display: none;
   }
 
   .menu-btn {
@@ -794,12 +864,18 @@
 
     .floating-progress {
       transform: translateX(-50%);
-      bottom: 16px;
+      bottom: max(16px, env(safe-area-inset-bottom, 16px));
     }
 
     .toast { transform: translateX(-50%); }
 
-    .topbar { padding: 10px 16px; gap: 10px; }
+    .topbar {
+      padding: 10px 16px;
+      padding-top: max(10px, env(safe-area-inset-top, 10px));
+      gap: 10px;
+    }
+
+    .verse-search-panel { padding: 8px 16px; }
 
     .surah-header { padding: 24px 16px 20px; }
 
@@ -948,8 +1024,20 @@
         <button class="action-btn" id="btnFrench" onclick="toggleSetting('french')" title="Traduction">
           🇫🇷 <span>Traduction</span>
         </button>
+        <button class="action-btn" id="btnSearch" onclick="toggleVerseSearch()" title="Rechercher dans les versets">
+          🔍
+        </button>
         <button class="action-btn" onclick="toggleSettings()">⚙️</button>
       </div>
+    </div>
+
+    <!-- VERSE SEARCH BAR -->
+    <div class="verse-search-panel" id="verseSearchPanel">
+      <input class="verse-search-input" id="verseSearchInput" type="text"
+        placeholder="Rechercher en arabe, français ou phonétique…"
+        oninput="searchInVerses()" autocomplete="off" autocorrect="off" spellcheck="false">
+      <span class="verse-search-count" id="verseSearchCount"></span>
+      <button class="verse-search-close" onclick="closeVerseSearch()">✕</button>
     </div>
 
     <!-- VERSE CONTENT -->
@@ -1422,6 +1510,12 @@ async function loadSurah(num) {
   document.getElementById('topbarFr').textContent = `${surah.translit} — ${surah.verses} versets`;
 
   const content = document.getElementById('surahContent');
+  // Reset search on surah change
+  if (verseSearchActive) {
+    document.getElementById('verseSearchInput').value = '';
+    document.getElementById('verseSearchCount').textContent = '';
+  }
+
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   // Close sidebar on mobile
@@ -1759,6 +1853,148 @@ function observeVerses() {
 }
 
 setTimeout(observeVerses, 800);
+
+// ============================================================
+// VERSE SEARCH (arabic, french, phonetic)
+// ============================================================
+let verseSearchActive = false;
+
+function toggleVerseSearch() {
+  const panel = document.getElementById('verseSearchPanel');
+  const btn = document.getElementById('btnSearch');
+  verseSearchActive = !verseSearchActive;
+  panel.classList.toggle('open', verseSearchActive);
+  btn.classList.toggle('active', verseSearchActive);
+  if (verseSearchActive) {
+    setTimeout(() => document.getElementById('verseSearchInput').focus(), 100);
+  } else {
+    closeVerseSearch();
+  }
+}
+
+function closeVerseSearch() {
+  verseSearchActive = false;
+  document.getElementById('verseSearchPanel').classList.remove('open');
+  document.getElementById('btnSearch').classList.remove('active');
+  document.getElementById('verseSearchInput').value = '';
+  document.getElementById('verseSearchCount').textContent = '';
+  // Restore all cards
+  document.querySelectorAll('.verse-card').forEach(card => {
+    card.classList.remove('search-hidden', 'search-match');
+  });
+  // Remove all highlights
+  document.querySelectorAll('.search-highlight').forEach(el => {
+    const parent = el.parentNode;
+    parent.replaceChild(document.createTextNode(el.textContent), el);
+    parent.normalize();
+  });
+}
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function highlightText(node, regex) {
+  // Walk text nodes and wrap matches
+  if (node.nodeType === 3) { // text node
+    const text = node.textContent;
+    if (!regex.test(text)) return;
+    regex.lastIndex = 0;
+    const frag = document.createDocumentFragment();
+    let lastIndex = 0, match;
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+      }
+      const mark = document.createElement('mark');
+      mark.className = 'search-highlight';
+      mark.textContent = match[0];
+      frag.appendChild(mark);
+      lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < text.length) {
+      frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+    }
+    node.parentNode.replaceChild(frag, node);
+    return;
+  }
+  // Skip mark tags to avoid re-highlighting
+  if (node.nodeName === 'MARK' || node.nodeName === 'BUTTON' || node.nodeName === 'DIV' && node.classList.contains('verse-num-badge')) return;
+  Array.from(node.childNodes).forEach(child => highlightText(child, regex));
+}
+
+function searchInVerses() {
+  const query = document.getElementById('verseSearchInput').value.trim();
+  const countEl = document.getElementById('verseSearchCount');
+
+  // Clear previous highlights
+  document.querySelectorAll('.search-highlight').forEach(el => {
+    const parent = el.parentNode;
+    if (parent) {
+      parent.replaceChild(document.createTextNode(el.textContent), el);
+      parent.normalize();
+    }
+  });
+
+  if (!query) {
+    document.querySelectorAll('.verse-card').forEach(card => {
+      card.classList.remove('search-hidden', 'search-match');
+    });
+    countEl.textContent = '';
+    return;
+  }
+
+  const regex = new RegExp(escapeRegex(query), 'gi');
+  let matchCount = 0;
+
+  document.querySelectorAll('.verse-card').forEach(card => {
+    // Search in arabic, phonetic, and french text containers
+    const arEl = card.querySelector('.verse-arabic');
+    const phEl = card.querySelector('.verse-phonetic');
+    const frEl = card.querySelector('.verse-french');
+
+    const arText = arEl ? arEl.textContent : '';
+    const phText = phEl ? phEl.textContent : '';
+    const frText = frEl ? frEl.textContent : '';
+
+    regex.lastIndex = 0;
+    const matchesAr = regex.test(arText);
+    regex.lastIndex = 0;
+    const matchesPh = regex.test(phText);
+    regex.lastIndex = 0;
+    const matchesFr = regex.test(frText);
+
+    const hasMatch = matchesAr || matchesPh || matchesFr;
+
+    if (hasMatch) {
+      card.classList.remove('search-hidden');
+      card.classList.add('search-match');
+      matchCount++;
+
+      // Apply highlights
+      const re = new RegExp(escapeRegex(query), 'gi');
+      if (matchesAr && arEl) highlightText(arEl, new RegExp(escapeRegex(query), 'gi'));
+      if (matchesPh && phEl) highlightText(phEl, new RegExp(escapeRegex(query), 'gi'));
+      if (matchesFr && frEl) highlightText(frEl, new RegExp(escapeRegex(query), 'gi'));
+
+      // Scroll to first match
+    } else {
+      card.classList.add('search-hidden');
+      card.classList.remove('search-match');
+    }
+  });
+
+  countEl.textContent = matchCount > 0 ? `${matchCount} résultat${matchCount > 1 ? 's' : ''}` : 'Aucun résultat';
+
+  // Scroll to first match
+  const firstMatch = document.querySelector('.verse-card.search-match');
+  if (firstMatch) {
+    firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+// Close search when loading a new surah
+const _origLoadSurah = loadSurah;
 </script>
 </body>
 </html>
