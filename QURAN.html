@@ -777,7 +777,7 @@
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.5);
-    z-index: 99;
+    z-index: 98;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s;
@@ -1426,6 +1426,18 @@ function getSurahProgress(surahNum) {
   return Math.round((read.size / surah.verses) * 100);
 }
 
+function selectSurah(num) {
+  // On mobile: close sidebar first, then load
+  if (window.innerWidth <= 768) {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('visible');
+    // Small delay so the sidebar animation doesn't conflict with DOM update
+    setTimeout(() => loadSurah(num), 80);
+  } else {
+    loadSurah(num);
+  }
+}
+
 // ============================================================
 // RENDER SIDEBAR
 // ============================================================
@@ -1441,7 +1453,7 @@ function renderSidebar() {
 
   list.innerHTML = filtered.map(s => {
     const prog = getSurahProgress(s.num);
-    return `<div class="surah-item${s.num === state.currentSurah ? ' active' : ''}${prog > 0 ? ' has-progress' : ''}" onclick="loadSurah(${s.num})">
+    return `<div class="surah-item${s.num === state.currentSurah ? ' active' : ''}${prog > 0 ? ' has-progress' : ''}" onclick="selectSurah(${s.num})">
       <div class="surah-num">${s.num}</div>
       <div class="surah-names">
         <div class="surah-name-ar">${s.ar}</div>
@@ -1517,12 +1529,6 @@ async function loadSurah(num) {
   }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  // Close sidebar on mobile
-  if (window.innerWidth <= 768) {
-    document.getElementById('sidebar').classList.remove('open');
-    document.getElementById('overlay').classList.remove('visible');
-  }
 
   // If we have hardcoded data, show immediately
   if (VERSE_DATA[num]) {
