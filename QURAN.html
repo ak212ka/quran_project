@@ -80,7 +80,7 @@
     flex-direction: column;
     position: fixed;
     top: 0; left: 0; bottom: 0;
-    z-index: 100;
+    z-index: 200;
     transform: translateX(0);
     transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
     overflow: hidden;
@@ -207,6 +207,8 @@
   .surah-list {
     flex: 1;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
     padding: 0 8px 16px;
     scrollbar-width: thin;
     scrollbar-color: var(--gold-dim) transparent;
@@ -777,7 +779,7 @@
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.5);
-    z-index: 98;
+    z-index: 150;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s;
@@ -851,12 +853,15 @@
     :root { --sidebar-w: 0px; }
 
     .sidebar {
-      width: 280px;
+      width: 285px;
       transform: translateX(-100%);
-      box-shadow: var(--shadow);
+      box-shadow: 0 0 60px rgba(0,0,0,0.8);
+      z-index: 200;
     }
 
-    .sidebar.open { transform: translateX(0); }
+    .sidebar.open {
+      transform: translateX(0);
+    }
 
     .main { margin-left: 0; }
 
@@ -865,6 +870,7 @@
     .floating-progress {
       transform: translateX(-50%);
       bottom: max(16px, env(safe-area-inset-bottom, 16px));
+      min-width: 200px;
     }
 
     .toast { transform: translateX(-50%); }
@@ -890,7 +896,7 @@
     .action-btn span { display: none; }
     .action-btn { padding: 0 10px; }
 
-    .settings-panel { width: 260px; }
+    .settings-panel { width: 260px; z-index: 200; }
   }
 
   /* ANIMATIONS */
@@ -1427,15 +1433,10 @@ function getSurahProgress(surahNum) {
 }
 
 function selectSurah(num) {
-  // On mobile: close sidebar first, then load
-  if (window.innerWidth <= 768) {
-    document.getElementById('sidebar').classList.remove('open');
-    document.getElementById('overlay').classList.remove('visible');
-    // Small delay so the sidebar animation doesn't conflict with DOM update
-    setTimeout(() => loadSurah(num), 80);
-  } else {
-    loadSurah(num);
-  }
+  // Close sidebar on mobile
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('visible');
+  loadSurah(num);
 }
 
 // ============================================================
@@ -1786,15 +1787,29 @@ function resetProgress() {
 function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('overlay');
-  sidebar.classList.toggle('open');
-  overlay.classList.toggle('visible', sidebar.classList.contains('open'));
+  const isOpen = sidebar.classList.contains('open');
+  if (isOpen) {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('visible');
+  } else {
+    document.getElementById('settingsPanel').classList.remove('open');
+    sidebar.classList.add('open');
+    overlay.classList.add('visible');
+  }
 }
 
 function toggleSettings() {
   const panel = document.getElementById('settingsPanel');
   const overlay = document.getElementById('overlay');
-  panel.classList.toggle('open');
-  overlay.classList.toggle('visible', panel.classList.contains('open'));
+  const isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    panel.classList.remove('open');
+    overlay.classList.remove('visible');
+  } else {
+    document.getElementById('sidebar').classList.remove('open');
+    panel.classList.add('open');
+    overlay.classList.add('visible');
+  }
 }
 
 function closeAll() {
